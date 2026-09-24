@@ -1,48 +1,8 @@
-library(readxl)
 library(dplyr)
-
-# Load Dataset 
-RDC_Inventory_Core_Metrics_Zip_History <- read_excel("~/Desktop/Capstone Project/RDC_Inventory_Core_Metrics_Zip_History.xlsx")
-View(RDC_Inventory_Core_Metrics_Zip_History)
-
 library(readxl)
-RDC_Inventory_Core_Metrics_Zip_History <- read_excel("C:/Users/mallo/OneDrive/Desktop/RDC_Inventory_Core_Metrics_Zip_History 2.xlsx")
-View(RDC_Inventory_Core_Metrics_Zip_History)
 
-# ZIP Codes 
-airport_zipcodes <- c(
-  
-  # Atlanta
-  30337, 30354, 30297, 30305, 30339, 30328, 30309,
-  
-  # Dallas/Fort Worth
-  76051, 75063, 75019, 75201, 76102, 76010, 75024,
-  
-  # Denver
-  80249, 80019, 80022, 80202, 80203, 80206, 80226,
-  
-  # Los Angeles
-  90045, 90301, 90245, 90012, 90210, 90028, 90401,
-  
-  # Chicago
-  60018, 60176, 60601, 60201, 60005, 60302,
-  
-  # Minneapolis
-  55425, 55423, 55120, 55401, 55101, 55424, 55109,
-  
-  # New York
-  11434, 11420, 11414, 11375, 11354, 11103, 11101,
-  
-  # Boston
-  2128, 2150, 2151, 2108, 2116, 2130, 2129
-)
-
-# Filter the data
-airport_data <- RDC_Inventory_Core_Metrics_Zip_History %>%
-  filter(postal_code %in% airport_zipcodes)
-
-# View data
-View(airport_data)
+Filtered_RDC_Inverntory <- read_excel("Filtered_RDC_Inverntory.xlsx")
+View(Filtered_RDC_Inverntory)
 
 
 # Add new column for either near or further from airport
@@ -51,14 +11,14 @@ airport_data <- airport_data %>%
     airport_distance = case_when(
       
       postal_code %in% c(
-        30337, 30354, 30297,
+        30349, 30288, 30296,
         76051, 75063, 75019,
-        80249, 80019, 80022,
-        90045, 90301, 90245,
-        60018, 60176,
-        55425, 55423, 55120,
-        11434, 11420, 11414,
-        2128, 2150, 2151
+        80019, 80022, 80249,
+        90094, 90250, 90266,
+        60018, 60131,60706,
+        55425, 55120, 55108,
+        11580, 11598, 11375,
+        02116, 02129, 02119
       ) ~ "Near Airport",
       
       postal_code %in% c(
