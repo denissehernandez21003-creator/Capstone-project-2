@@ -6,7 +6,7 @@ View(Filtered_RDC_Inverntory)
 
 
 # Add new column for either near or further from airport
-airport_data <- airport_data %>%
+airport_data <- Filtered_RDC_Inverntory %>%
   mutate(
     airport_distance = case_when(
       
@@ -312,3 +312,4 @@ barplot(
   ylab = "Average Median Listing Price",
   ylim = c(0, 3000000)
 )
+
