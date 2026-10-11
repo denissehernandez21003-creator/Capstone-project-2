@@ -1,0 +1,460 @@
+library(dplyr)
+library(readxl)
+
+Filtered_RDC_Inverntory <- read_excel("Filtered_RDC_Inverntory.xlsx")
+View(Filtered_RDC_Inverntory)
+
+library(readxl)
+Filtered_RDC_Inventory <- read_excel("DS Capstone/Filtered_RDC_Inventory.xlsx")
+View(Filtered_RDC_Inventory)
+
+
+# Add new column for either near or further from airport
+airport_data <- Filtered_RDC_Inventory %>%
+  mutate(
+    airport_distance = case_when(
+      
+      postal_code %in% c(
+        30349, 30288, 30296,
+        76051, 75063, 75019,
+        80019, 80022, 80249,
+        90094, 90250, 90266,
+        60018, 60131,60706,
+        55425, 55120, 55108,
+        11580, 11598, 11375,
+        2116, 2129, 2119
+      ) ~ "Near Airport",
+      
+      postal_code %in% c(
+        30339, 30319, 30126,
+        76102, 75024, 76226,
+        80603, 80601, 80229, 
+        90210, 90270, 90706, 
+        60089, 60010, 60022, 
+        55391, 55422, 55128, 
+        11906, 10456, 11209, 
+        1923, 1887, 1778
+      ) ~ "Further from Airport"
+    )
+  )
+
+
+# name airports
+airport_data <- airport_data %>%
+  mutate(
+    airport = case_when(
+      
+      postal_code %in% c(
+        30349, 30288, 30296, 30339, 30319, 30126
+      ) ~ "ATL",
+      
+      postal_code %in% c(
+        76051, 75063, 75019, 76102, 75024, 76226 
+      ) ~ "DFW",
+      
+      postal_code %in% c(
+        80019, 80022, 80249, 80603, 80601, 80229
+      ) ~ "DEN",
+      
+      postal_code %in% c(
+        90094, 90250, 90266, 90210, 90270, 90706
+      ) ~ "LAX",
+      
+      postal_code %in% c(
+        60018, 60131, 60706, 60089, 60010, 60022
+      ) ~ "ORD",
+      
+      postal_code %in% c(
+        55425, 55120, 55108, 55391, 55422, 55128
+      ) ~ "MSP",
+      
+      postal_code %in% c(
+        11580, 11598, 11375, 11906, 10456, 11209
+      ) ~ "JFK",
+      
+      postal_code %in% c(
+        2116, 2129, 2119, 1923, 1887, 1778
+      ) ~ "BOS"
+    )
+  )
+
+
+# View data 
+View(airport_data)
+
+
+# Check how many rows are in each group
+table(airport_data$airport_distance)
+
+table(airport_data$airport)
+
+
+# Summary of housing prices
+summary(airport_data$median_listing_price)
+
+
+# Average price for near and further from airport
+distance_summary <- airport_data %>%
+  group_by(airport_distance) %>%
+  summarise(
+    average_price = mean(median_listing_price, na.rm = TRUE)
+  )
+
+distance_summary
+
+
+# Average price for each airport
+airport_summary <- airport_data %>%
+  group_by(airport) %>%
+  summarise(
+    average_price = mean(median_listing_price, na.rm = TRUE)
+  )
+
+airport_summary
+
+
+# Average price for near and further at each airport
+airport_distance_summary <- airport_data %>%
+  group_by(airport, airport_distance) %>%
+  summarise(
+    average_price = mean(median_listing_price, na.rm = TRUE)
+  )
+
+airport_distance_summary
+
+
+
+# Boxplot for near vs further
+boxplot(
+  median_listing_price ~ airport_distance,
+  data = airport_data,
+  main = "Housing Prices Near vs Further from Airports",
+  xlab = "Distance from Airport",
+  ylab = "Median Listing Price"
+)
+
+
+# Boxplot for each airport
+boxplot(
+  median_listing_price ~ airport,
+  data = airport_data,
+  main = "Housing Prices by Airport",
+  xlab = "Airport",
+  ylab = "Median Listing Price"
+)
+
+
+#2 Boxplots with the near and further (outliers removed)
+
+#Removing Outliers for Boxplot
+
+housing_no_outliers <- airport_data %>%
+  group_by(airport) %>%
+  filter(
+    median_listing_price >= quantile(median_listing_price, 0.25, na.rm = TRUE) -
+      1.5 * IQR(median_listing_price, na.rm = TRUE),
+    
+    median_listing_price <= quantile(median_listing_price, 0.75, na.rm = TRUE) +
+      1.5 * IQR(median_listing_price, na.rm = TRUE),
+      ) %>%
+  ungroup()
+
+
+
+#Boxplot with removed outliers
+
+library(ggplot2)
+
+ggplot(housing_no_outliers,
+       aes(x = airport, y = median_listing_price)) +
+  geom_boxplot() +
+  labs(
+    title = "Housing Prices by Airport",
+    x = "Airport",
+    y = "Housing Price"
+  )
+
+library(scales)
+#DEN Boxplot
+
+ggplot(
+  filter(housing_no_outliers, airport == "DEN"),
+  aes(x = airport, y = median_listing_price)
+) +
+  geom_boxplot(
+    width = 0.45,
+    fill = "lightblue",
+    alpha = 0.7
+  ) +
+  scale_y_continuous(
+    labels = dollar_format()
+  ) +
+  labs(
+    title = "Housing Prices Denver International Airport",
+    x = NULL,
+    y = "Median Listing Price"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    plot.subtitle = element_text(size = 11),
+    axis.title.y = element_text(face = "bold"),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor = element_blank()
+  )
+
+
+#Boxplot All Airports (Outliers Removed)
+ggplot(
+  housing_no_outliers,
+  aes(x = airport, y = median_listing_price)
+) +
+  geom_boxplot(
+    fill = "lightblue",
+    alpha = 0.7,
+    width = 0.6
+  ) +
+  scale_y_continuous(
+    labels = dollar_format()
+  ) +
+  labs(
+    title = "Housing Prices by Airport",
+    x = "Airport",
+    y = "Median Listing Price"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    axis.title = element_text(face = "bold"),
+    panel.grid.minor = element_blank()
+  )
+
+#Boxplot of All airports(Outliers Removed)
+filter(airport != "LAX") %>%
+ggplot(
+  housing_no_outliers,
+  aes(
+    x = airport,
+    y = median_listing_price,
+    fill = airport
+  )
+) +
+  geom_boxplot(
+    alpha = 0.75,
+    width = 0.65
+  ) +
+  scale_y_continuous(
+    labels = dollar_format()
+  ) +
+  labs(
+    title = "Housing Prices Near Major U.S. Airports",
+    x = "Airport",
+    y = "Median Listing Price"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    axis.title = element_text(face = "bold"),
+    legend.position = "none",
+    panel.grid.minor = element_blank()
+  )
+
+
+
+# Filter for ZIP codes near airports, excluding LAX
+housing_near <- housing_no_outliers %>%
+  filter(
+    airport_distance == "Near Airport",
+    airport != "LAX"
+  )
+
+# Create boxplot
+ggplot(housing_near,
+       aes(x = airport,
+           y = median_listing_price,
+           fill = airport)) +
+  geom_boxplot(
+    alpha = 0.75,
+    width = 0.65
+  ) +
+  scale_y_continuous(labels = scales::dollar) +
+  labs(
+    title = "Housing Prices Near Major U.S. Airports",
+    x = "Airport",
+    y = "Median Listing Price"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    axis.title = element_text(face = "bold"),
+    legend.position = "none",
+    panel.grid.minor = element_blank()
+  )
+
+
+
+
+
+
+
+# Filter for ZIP codes near airports, WITH LAX
+housing_near <- housing_no_outliers %>%
+  filter(
+    airport_distance == "Near Airport"  )
+
+# Create boxplot
+ggplot(housing_near,
+       aes(x = airport,
+           y = median_listing_price,
+           fill = airport)) +
+  geom_boxplot(
+    alpha = 0.75,
+    width = 0.65
+  ) +
+  scale_y_continuous(labels = scales::dollar) +
+  labs(
+    title = "Housing Prices Near Major U.S. Airports",
+    x = "Airport",
+    y = "Median Listing Price"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    axis.title = element_text(face = "bold"),
+    legend.position = "none",
+    panel.grid.minor = element_blank()
+  )
+
+
+
+
+
+# Filter for ZIP codes further airports, excluding LAX
+housing_near <- housing_no_outliers %>%
+  filter(
+    airport_distance == "Further from Airport",
+    airport != "LAX"
+  )
+
+# Create boxplot
+ggplot(housing_near,
+       aes(x = airport,
+           y = median_listing_price,
+           fill = airport)) +
+  geom_boxplot(
+    alpha = 0.75,
+    width = 0.65
+  ) +
+  scale_y_continuous(labels = scales::dollar) +
+  labs(
+    title = "Housing Prices Near Major U.S. Airports",
+    x = "Airport",
+    y = "Median Listing Price"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    axis.title = element_text(face = "bold"),
+    legend.position = "none",
+    panel.grid.minor = element_blank()
+  )
+
+
+
+
+
+
+
+# Filter for ZIP codes further airports, WITH LAX
+housing_near <- housing_no_outliers %>%
+  filter(
+    airport_distance == "Further from Airport"  )
+
+# Create boxplot
+ggplot(housing_near,
+       aes(x = airport,
+           y = median_listing_price,
+           fill = airport)) +
+  geom_boxplot(
+    alpha = 0.75,
+    width = 0.65
+  ) +
+  scale_y_continuous(labels = scales::dollar) +
+  labs(
+    title = "Housing Prices Near Major U.S. Airports",
+    x = "Airport",
+    y = "Median Listing Price"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    axis.title = element_text(face = "bold"),
+    legend.position = "none",
+    panel.grid.minor = element_blank()
+  )
+
+
+
+
+
+
+
+
+# Histogram of housing prices
+hist(
+  airport_data$median_listing_price,
+  main = "Distribution of Housing Prices",
+  xlab = "Median Listing Price"
+)
+
+
+# Bar graph for average price by airport
+barplot(
+  airport_summary$average_price,
+  names.arg = airport_summary$airport,
+  main = "Average Housing Price by Airport",
+  xlab = "Airport",
+  ylab = "Average Median Listing Price"
+)
+
+
+# Average housing price further from each airport
+far_airport_average <- airport_data %>%
+  filter(airport_distance == "Further from Airport") %>%
+  group_by(airport) %>%
+  summarise(
+    average_price = mean(median_listing_price, na.rm = TRUE)
+  )
+
+# Bar graph
+barplot(
+  far_airport_average$average_price,
+  names.arg = far_airport_average$airport,
+  col = "darkblue",
+  main = "Average Housing Price Further from Airport",
+  xlab = "Airport",
+  ylab = "Average Median Listing Price",
+  ylim = c(0, 3000000)
+)
+
+
+
+# Average housing price near each airport
+near_airport_average <- airport_data %>%
+  filter(airport_distance == "Near Airport") %>%
+  group_by(airport) %>%
+  summarise(
+    average_price = mean(median_listing_price, na.rm = TRUE)
+  )
+
+# Bar graph
+barplot(
+  near_airport_average$average_price,
+  names.arg = near_airport_average$airport,
+  col = "darkblue",
+  main = "Average Housing Price Near Airport",
+  xlab = "Airport",
+  ylab = "Average Median Listing Price",
+  ylim = c(0, 3000000)
+)
+
